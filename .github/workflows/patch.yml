@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       old_domain:
-        description: 'النطاق أو الرابط القديم (مثل: panel.egyplayer.com)'
+        description: 'النطاق القديم (مثل: egyplayer.com)'
         required: true
-        default: 'panel.egyplayer.com'
+        default: 'egyplayer.com'
       new_domain:
         description: 'النطاق الجديد'
         required: true
@@ -22,10 +22,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Apktool
+      - name: Install Latest Apktool (v2.10.0)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y apktool
+          wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
+          wget https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar -O apktool.jar
+          sudo mv apktool /usr/local/bin/
+          sudo mv apktool.jar /usr/local/bin/
+          sudo chmod +x /usr/local/bin/apktool
+          sudo chmod +x /usr/local/bin/apktool.jar
 
       - name: Download Uber APK Signer
         run: wget https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar -O signer.jar
@@ -43,8 +47,8 @@ jobs:
           echo "Replacing $OLD with $NEW..."
           find decoded_apk -type f \( -name "*.xml" -o -name "*.smali" -o -name "*.json" \) -exec sed -i "s|$OLD|$NEW|g" {} +
 
-      - name: Recompile APK
-        run: apktool b decoded_apk -o new_unsigned.apk
+      - name: Recompile APK with AAPT2
+        run: apktool b --use-aapt2 decoded_apk -o new_unsigned.apk
 
       - name: Sign Recompiled APK
         run: java -jar signer.jar -a new_unsigned.apk --allowResign -o output_dir
